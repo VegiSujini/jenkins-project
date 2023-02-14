@@ -2,7 +2,11 @@ pipeline {
     agent{ label 'QA Environment'}
 
     stages {
-        l;o
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
         stage('checking out from github')
         {
             steps
@@ -19,6 +23,7 @@ pipeline {
             }
             
         }
+       
       
         stage('mvn test')
         {
@@ -50,32 +55,35 @@ pipeline {
                 archiveArtifacts artifacts: 'target/*.jar', followSymlinks: false
                 }
             }
-        stage ('upload') {
-    gitlabCommitStatus("upload") {
-      def server = Artifactory.server "artifactory@ibsrv02"
-      def buildInfo = Artifactory.newBuildInfo()
-      buildInfo.env.capture = true
-      buildInfo.env.collect()
-      def uploadSpec = """{
-        "files": [
-          {
-            "pattern": "**/target/*.jar",
-            "target": "libs-snapshot-local"
-          }, {
-            "pattern": "**/target/*.pom",
-            "target": "libs-snapshot-local"
-          }, {
-            "pattern": "**/target/*.war",
-            "target": "libs-snapshot-local"
-          }
-        ]
-      }"""
-      server.upload spec: uploadSpec, buildInfo: buildInfo
+       
+       
+       stage ('Upload file') {
+            steps {
+                rtUpload (
+                   
+                    serverId:SERVER_ID,
+                    spec: """{
+                            "files": [
+                                    {
+                                        "pattern": "CaseStudyPipeline/pom.xml",
+                                        "target": "libs-snapshot-local"
+                                    }
+                                ]
+                            }"""
+                )
+            }
+        }
 
-      buildInfo.retention maxBuilds: 10, maxDays: 7, deleteBuildArtifacts: true
-     
-      server.publishBuildInfo buildInfo
-    }
+        stage ('Publish build info') {
+            steps {
+                rtPublishBuildInfo (
+                    serverId: SERVER_ID
+                )
+            }
+        }
+       
+       
+       
 }
  post {
         always {
@@ -91,3 +99,4 @@ pipeline {
  }
 
 }
+
